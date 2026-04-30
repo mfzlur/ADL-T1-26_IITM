@@ -1,0 +1,72 @@
+# ── Dependencies ──────────────────────────────────────────────
+node_modules/
+.pnp
+.pnp.js
+
+# ── Build outputs ─────────────────────────────────────────────
+dist/
+build/
+client/dist/
+server/dist/
+
+# ── Environment variables ─────────────────────────────────────
+server/.env
+.env
+.env.local
+.env.development
+.env.production
+.env.test
+.env.*.local
+server/.env
+client/.env
+seed.sh
+
+# ── Logs ──────────────────────────────────────────────────────
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# ── TypeScript ────────────────────────────────────────────────
+*.tsbuildinfo
+
+# ── Vite ──────────────────────────────────────────────────────
+client/.vite/
+
+# ── OS files ──────────────────────────────────────────────────
+.DS_Store
+.DS_Store?
+._*
+Thumbs.db
+desktop.ini
+
+# ── Editor / IDE ──────────────────────────────────────────────
+.vscode/settings.json
+.vscode/launch.json
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# ── Uploads / user-generated content ──────────────────────────
+server/uploads/
+uploads/
+
+# ── Testing ───────────────────────────────────────────────────
+coverage/
+.nyc_output/
+
+# ── Misc ──────────────────────────────────────────────────────
+.cache/
+.turbo/
+.eslintcache
+*.tgz
+*.zip
+
+
+# Migrations
+server/src/migrations/

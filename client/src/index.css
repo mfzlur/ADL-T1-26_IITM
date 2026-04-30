@@ -1,0 +1,12 @@
+@import "tailwindcss";
+
+/* Keep your root contained only for non-auth dashboard pages */
+#root {
+min-height: 100svh;
+display: flex;
+flex-direction: column;
+}
+
+body {
+  margin: 0;
+}
