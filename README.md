@@ -1,433 +1,144 @@
-## ♟ Chess Masterclass & Coaching Arena
+# ♟ Chess Masterclass & Coaching Arena
 
-A role-based, full-stack web platform that connects chess coaches with students through structured, capacity-limited masterclasses. Coaches publish sessions, players enroll, and admins oversee the ecosystem — all enforced through JWT-based RBAC at both API and UI levels.
+![Chess Arena Hero](file:///home/fazlur/.gemini/antigravity/brain/d2c235d4-701a-4e33-baaa-17f965c8ae8b/chess_arena_hero_1777619534996.png)
 
-## Table of Contents
+A high-performance, role-based full-stack platform designed to bridge the gap between passive chess learning and elite cohort-based coaching. This platform empowers coaches to host structured, capacity-limited masterclasses while providing students with a mentor-led environment for systematic improvement.
 
-*   [Overview](#overview)
-*   [Features](#features)
-*   [Tech Stack](#tech-stack)
-*   [Architecture](#architecture)
-*   [Database Schema](#database-schema)
-*   [Project Structure](#project-structure)
-*   [Getting Started](#getting-started)
-*   [Environment Variables](#environment-variables)
-*   [API Reference](#api-reference)
-*   [Role-Based Access](#role-based-access)
-*   [Feature Status](#feature-status)
+---
 
-## Overview
+## 🚀 Key Technical Features
 
-**Problem:** The chess community lacks structured, cohort-based learning. Existing platforms (YouTube, chess.com, lichess) are passive and offer no accountability between coaches and students.
+### 🔐 Enterprise-Grade Security & RBAC
+*   **JWT-Based Authentication**: Stateless authentication using JSON Web Tokens with role-encoded payloads.
+*   **Strict Authorization Guards**: Multi-level RBAC middleware enforcing permissions at both the API and UI layers.
+*   **Ownership Enforcement**: Programmatic checks (e.g., `coach_id === req.user.userId`) preventing unauthorized resource manipulation.
+*   **Safe Transactions**: ACID-compliant database transactions for enrollment to prevent race conditions in capacity management.
 
-**Solution:** Chess Arena creates a capacity-controlled, mentor-led environment where:
+### 🔍 Advanced Search & Discovery
+*   **Dynamic Query Engine**: Built with TypeORM `QueryBuilder` supporting complex multi-parameter filtering.
+*   **Filtering Options**: Search by keyword, category (Opening, Middlegame, Endgame, Tactics), coach name, and date range.
+*   **Availability Intelligence**: Real-time filtering to exclude full classes or past sessions from discovery results.
+*   **Pagination & Sorting**: Performance-optimized data fetching with customizable sort orders.
 
-*   Coaches publish structured masterclasses with seat limits
-*   Players discover, enroll in, and review classes
-*   Admins approve coaches and moderate content
-*   The system enforces business rules at both API and database layers
+### 📊 Coach Analytics & Insights
+*   **Performance Metrics**: Real-time tracking of enrollment trends, fill rates, and class popularity.
+*   **Data Visualization**: Interactive dashboards powered by `Chart.js` showing category distributions and daily enrollment growth.
+*   **Student Management**: Detailed roster views with the ability to manage active and waitlisted students.
 
-## Features
+### 🛠️ Advanced Masterclass Management
+*   **Rich Media Support**: Integrated file uploads for PGN (chess notation) and board images via `Multer`.
+*   **Material Registry**: Dedicated system for managing class-specific resources (Videos, Articles, Documents, Links).
+*   **Waitlist Ecosystem**: Automated FIFO (First-In-First-Out) promotion logic that elevates waitlisted students when spots open.
+*   **Kick & Moderation**: Structured "Kick Request" workflow for coaches, requiring admin approval to maintain platform integrity.
 
-| # | Feature | Description |
-| --- | --- | --- |
-| 1 | **Multi-role System** | Admin / Coach / Player with JWT-encoded roles and RBAC middleware |
-| 2 | **Masterclass CRUD** | Coaches create, edit, and delete their own classes with ownership enforcement |
-| 3 | **JWT Authentication** | Stateless auth with role in payload; every protected route validates token + role |
-| 4 | **Role Dashboards** | Three completely separate dashboards — no cross-role data leakage |
-| 5 | **Enrollment + Capacity** | Transaction-safe enrollment; active if seats available, waitlisted if full |
-| 6 | **Advanced Search** | Keyword, category, availability, date range, sort, and pagination |
-| 7 | **Review System** | Players rate and review coaches after attending a masterclass |
-| 8 | **Waitlist Auto-Promotion** | When a player cancels, the first waitlisted player is promoted automatically |
-| 9 | **File Upload** | Coaches upload PGN files or board images (max 10MB) via Multer |
-| 10 | **Analytics Dashboard** | Coaches view enrollment trends, fill rates, and category breakdowns via Chart.js |
+### 🔔 In-App Engagement System
+*   **Real-time Notifications**: Automated alerts for new classes from favorite coaches, material updates, and enrollment status changes.
+*   **Engagement Tools**: Bookmarking system for classes and "Favorite Coach" tracking for students.
+*   **Review & Feedback**: Post-session star ratings and written reviews to build instructor credibility.
 
-## Tech Stack
+---
 
-| Technology | Role | Reason |
-| --- | --- | --- |
-| **React 18** | Frontend SPA | Component-based, role-aware dashboard rendering |
-| **TypeScript** | Full-stack language | Type safety across entities, services, and API contracts |
-| **Vite** | Frontend build tool | Fast HMR, optimised production build |
-| **Tailwind CSS** | UI styling | Utility-first, consistent dark theme across all dashboards |
-| **React Router v6** | Frontend routing | Protected routes with role-based redirects |
-| **Axios** | HTTP client | Interceptors auto-attach JWT headers on every request |
-| **Chart.js + react-chartjs-2** | Analytics charts | Bar, line, and doughnut charts for coach analytics |
-| **Express** | REST API server | Lightweight, middleware-based routing |
-| **PostgreSQL** | Primary database | ACID-compliant; enforces referential integrity across all entities |
-| **TypeORM** | ORM | Entity decorators, migrations, QueryBuilder for complex aggregations |
-| **JWT (jsonwebtoken)** | Auth tokens | Stateless; role + userId encoded in payload |
-| **bcrypt** | Password hashing | Prevents plain-text credential exposure |
-| **Multer** | File upload middleware | Handles multipart/form-data for PGN and image uploads |
-| **Redis** | Optional caching | Caches masterclass listing endpoint to reduce DB load |
+## 🛠️ Technology Stack
 
-## Architecture
+| Component | Technology | Rationale |
+| :--- | :--- | :--- |
+| **Frontend** | **React 19 + Vite** | Modern, fast, and component-driven architecture. |
+| **Styling** | **Tailwind CSS 4** | Rapid, utility-first design with a consistent professional aesthetic. |
+| **Backend** | **Node.js + Express 5** | Scalable and modular REST API architecture. |
+| **Database** | **PostgreSQL** | Relational integrity and complex querying capabilities. |
+| **ORM** | **TypeORM** | Programmatic schema management and advanced QueryBuilder. |
+| **Cache** | **Redis** | (Optional) High-speed caching for frequent read operations. |
+| **State** | **React Context API** | Lightweight global state management for auth and user profiles. |
+| **Auth** | **JWT + bcrypt** | Secure, stateless authentication and salted password hashing. |
 
-```plaintext
-[React Frontend — Vite + Tailwind]
-         |  HTTP / Axios (JWT in Authorization header)
-[Express REST API — Port 5000]
-    |              |
-[JWT Middleware]  [Role Guard Middleware]
-         |
-    [Route Handlers]
-    /      |       \
-[Auth]  [Masterclass]  [Enrollment]  [Review]  [Admin]  [Analytics]
-                |
-           [Multer — /uploads]
-                |
-         [TypeORM ORM Layer]
-                |
-         [PostgreSQL — Port 5432]
+---
 
-[Redis — Port 6379]  (optional, class listing cache)
+## 🏗️ Architecture Overview
+
+```mermaid
+graph TD
+    Client[React Frontend] -- HTTPS/JWT --> API[Express REST API]
+    API -- RBAC Guard --> Auth[Auth Middleware]
+    API -- Ownership Check --> Controllers[Route Controllers]
+    Controllers -- Business Logic --> Services[Service Layer]
+    Services -- TypeORM --> DB[(PostgreSQL)]
+    Services -- File System --> Storage[Uploads/PGN]
+    Services -- Pub/Sub --> Notifications[Notification Service]
 ```
 
-## Database Schema
+---
 
-```plaintext
-users
-├── id            UUID PK
-├── name          VARCHAR(255)
-├── email         VARCHAR(255) UNIQUE
-├── password_hash TEXT
-├── role          ENUM(admin, coach, player)
-├── is_approved   BOOLEAN DEFAULT false
-└── created_at    TIMESTAMP
+## 🗄️ Database Schema
 
-masterclasses
-├── id            UUID PK
-├── title         VARCHAR(255)
-├── description   TEXT
-├── session_date  TIMESTAMP
-├── category      ENUM(opening, middlegame, endgame, tactics)
-├── capacity      INT
-├── media_url     TEXT NULL
-├── coach_id      UUID FK → users.id
-└── created_at    TIMESTAMP
+The system utilizes a highly relational schema managed programmatically via TypeORM entities:
 
-enrollments
-├── id              UUID PK
-├── player_id       UUID FK → users.id
-├── masterclass_id  UUID FK → masterclasses.id
-├── status          ENUM(active, waitlisted)
-└── enrolled_at     TIMESTAMP
+*   **Users**: Core identity table with role differentiation (`admin`, `coach`, `player`).
+*   **Masterclasses**: The primary business entity storing session metadata, capacity, and coach ownership.
+*   **Enrollments**: Join entity managing the many-to-many relationship between players and classes with `active`/`waitlisted` statuses.
+*   **Class Materials**: Hierarchical storage for resources linked to specific masterclasses.
+*   **Notifications**: Persistent storage for user alerts and engagement triggers.
+*   **Reviews**: Feedback registry for class ratings and student testimonials.
+*   **Kick Requests**: Moderation entity for managing coach-student conflicts.
 
-reviews
-├── id              UUID PK
-├── player_id       UUID FK → users.id
-├── masterclass_id  UUID FK → masterclasses.id
-├── rating          INT (1–5)
-├── comment         TEXT NULL
-└── created_at      TIMESTAMP
-```
+---
 
-**Relationships:**
-
-*   `User (coach)` → one-to-many → `Masterclass`
-*   `Masterclass` → one-to-many → `Enrollment`
-*   `User (player)` → one-to-many → `Enrollment`
-*   `User (player)` ↔ `Masterclass` — many-to-many via `Enrollment`
-*   `User (player)` → one-to-many → `Review`
-*   `Masterclass` → one-to-many → `Review`
-
-## Project Structure
-
-```plaintext
-chess-arena/
-├── client/                        # React frontend
-│   ├── index.html
-│   ├── vite.config.ts
-│   ├── tailwind.config.js
-│   └── src/
-│       ├── App.tsx                # Routes + ProtectedRoute wiring
-│       ├── main.tsx
-│       ├── context/
-│       │   └── AuthContext.tsx    # Global auth state (JWT decode + user)
-│       ├── hooks/
-│       │   └── useAuth.ts
-│       ├── components/
-│       │   ├── ProtectedRoute.tsx # Role-based route guard
-│       │   ├── ReviewModal.tsx    # Star rating + comment submission
-│       │   ├── ReviewsList.tsx    # Inline reviews display
-│       │   └── StarRating.tsx
-│       ├── pages/
-│       │   ├── Login.tsx
-│       │   ├── Register.tsx
-│       │   ├── AdminDashboard.tsx  # Overview / Coaches / Masterclasses / Users tabs
-│       │   ├── CoachDashboard.tsx  # My classes / Create / Edit / Students
-│       │   ├── PlayerDashboard.tsx # Browse / Enrolled / Waitlisted / Profile
-│       │   ├── BrowsePage.tsx      # Full search page with all filters + pagination
-│       │   └── AnalyticsPage.tsx   # Bar / Line / Doughnut charts for coach
-│       └── utils/
-│           ├── api.ts             # Axios instance with JWT interceptor
-│           ├── auth.ts            # Token decode helpers
-│           └── chartSetup.ts      # Chart.js global registration
-│
-├── server/                        # Express backend
-│   ├── .env
-│   ├── uploads/                   # Multer file storage (gitignored)
-│   └── src/
-│       ├── index.ts               # Express app entry point
-│       ├── config/
-│       │   └── database.ts        # TypeORM DataSource config
-│       ├── entities/
-│       │   ├── User.ts
-│       │   ├── Masterclass.ts
-│       │   ├── Enrollment.ts
-│       │   └── Review.ts
-│       ├── middlewares/
-│       │   ├── auth.ts            # JWT verify → attaches req.user
-│       │   ├── roleGuard.ts       # requireRole('coach') etc.
-│       │   └── upload.ts          # Multer config (PGN + images, 10MB limit)
-│       ├── controllers/           # Thin HTTP layer — delegates to services
-│       │   ├── auth.controller.ts
-│       │   ├── masterclass.controller.ts
-│       │   ├── enrollment.controller.ts
-│       │   ├── review.controller.ts
-│       │   ├── admin.controller.ts
-│       │   └── analytics.controller.ts
-│       ├── services/              # Business logic layer
-│       │   ├── auth.service.ts
-│       │   ├── masterclass.service.ts
-│       │   ├── enrollment.service.ts  # Transactions + auto-promotion
-│       │   ├── review.service.ts
-│       │   ├── admin.service.ts
-│       │   └── analytics.service.ts
-│       └── routes/
-│           ├── auth.routes.ts
-│           ├── masterclass.routes.ts
-│           ├── enrollment.routes.ts
-│           ├── review.routes.ts
-│           ├── admin.routes.ts
-│           └── analytics.routes.ts
-│
-├── .gitignore
-└── README.md
-```
-
-## Getting Started
+## 🚦 Getting Started
 
 ### Prerequisites
+*   Node.js 20+
+*   PostgreSQL 15+
+*   Redis (Optional for caching)
 
-```plaintext
-# Node.js 20+
-node --version
-
-# PostgreSQL 15+
-psql --version
-
-# Redis (optional)
-redis-server --version
-```
-
-### 1\. Clone and install
-
-```plaintext
+### 1. Installation
+```bash
+# Clone the repository
 git clone https://github.com/your-username/chess-arena.git
 cd chess-arena
 
-# Install backend dependencies
-cd server &amp;&amp; npm install
-
-# Install frontend dependencies
-cd ../client &amp;&amp; npm install
+# Install dependencies
+cd server && npm install
+cd ../client && npm install
 ```
 
-### 2\. Create PostgreSQL database
-
-```plaintext
-psql -U postgres
-CREATE DATABASE chess_arena;
-\q
-```
-
-### 3\. Configure environment variables
-
-```plaintext
-cd server
-cp .env.example .env
-# Edit .env with your values (see Environment Variables section)
-```
-
-### 4\. Create uploads directory
-
-```plaintext
-mkdir -p server/uploads
-```
-
-### 5\. Run the application
-
-Open two terminals:
-
-```plaintext
-# Terminal 1 — Backend (http://localhost:5000)
-cd server
-npm run dev
-
-# Terminal 2 — Frontend (http://localhost:3000)
-cd client
-npm run dev
-```
-
-TypeORM will auto-sync the schema on first run (`synchronize: true` in development).
-
-## Environment Variables
-
-Create `server/.env` from this template:
-
-```plaintext
-# Server
+### 2. Configuration
+Create a `.env` file in the `server` directory:
+```env
 PORT=5000
-NODE_ENV=development
-
-# PostgreSQL
 DB_HOST=localhost
 DB_PORT=5432
 DB_USERNAME=postgres
 DB_PASSWORD=your_password
 DB_NAME=chess_arena
-
-# JWT
-JWT_SECRET=your_super_secret_jwt_key_min_32_chars
-JWT_EXPIRES_IN=7d
-
-# Redis (optional)
-REDIS_URL=redis://localhost:6379
-
-# CORS
-CLIENT_URL=http://localhost:3000
+JWT_SECRET=your_32_char_secret
+CLIENT_URL=http://localhost:5173
 ```
 
-Create `client/.env`:
+### 3. Execution
+```bash
+# Terminal 1: Backend
+cd server
+npm run dev
 
-```plaintext
-VITE_API_URL=http://localhost:5000/api
+# Terminal 2: Frontend
+cd client
+npm run dev
 ```
 
-## API Reference
+---
 
-### Authentication
+## 📖 API Documentation (Summary)
 
-| Method | Endpoint | Access | Description |
-| --- | --- | --- | --- |
-| POST | `/api/auth/register` | Public | Register as coach or player |
-| POST | `/api/auth/login` | Public | Login, returns JWT |
-| GET | `/api/auth/me` | Any auth | Get current user profile |
+| Path | Method | Access | Description |
+| :--- | :--- | :--- | :--- |
+| `/api/auth` | `POST` | Public | Registration & JWT Login |
+| `/api/masterclasses` | `GET` | Public | Advanced search & discovery |
+| `/api/masterclasses` | `POST` | Coach | Create new masterclass (Multi-part) |
+| `/api/enrollments` | `POST` | Player | Transactional enrollment/waitlist |
+| `/api/materials` | `POST` | Coach | Manage class resources |
+| `/api/analytics` | `GET` | Coach | Personal performance metrics |
+| `/api/admin` | `PUT` | Admin | Coach approval & kick moderation |
 
-### Masterclasses
+---
 
-| Method | Endpoint | Access | Description |
-| --- | --- | --- | --- |
-| GET | `/api/masterclasses` | Public | List all classes (filters + pagination) |
-| GET | `/api/masterclasses/:id` | Public | Get single class detail |
-| GET | `/api/masterclasses/mine` | Coach | Get own classes |
-| POST | `/api/masterclasses` | Coach | Create class (multipart/form-data) |
-| PUT | `/api/masterclasses/:id` | Coach | Update own class |
-| DELETE | `/api/masterclasses/:id` | Coach | Delete own class (blocked if active enrollments) |
-| GET | `/api/masterclasses/:id/enrollments` | Coach | View students for own class |
-
-### Enrollments
-
-| Method | Endpoint | Access | Description |
-| --- | --- | --- | --- |
-| GET | `/api/enrollments/my` | Player | Get own active + waitlisted enrollments |
-| POST | `/api/enrollments/:masterclassId` | Player | Enroll (active or waitlisted) |
-| DELETE | `/api/enrollments/:masterclassId` | Player | Cancel + auto-promote waitlist |
-| GET | `/api/enrollments/:masterclassId/students` | Coach | View students roster |
-
-### Reviews
-
-| Method | Endpoint | Access | Description |
-| --- | --- | --- | --- |
-| POST | `/api/reviews/:masterclassId` | Player | Submit rating + comment |
-| GET | `/api/reviews/:masterclassId` | Public | Get all reviews for a class |
-| DELETE | `/api/reviews/:masterclassId` | Player | Delete own review |
-
-### Admin
-
-| Method | Endpoint | Access | Description |
-| --- | --- | --- | --- |
-| GET | `/api/admin/analytics` | Admin | Platform-wide stats |
-| GET | `/api/admin/users` | Admin | All users (filterable by role) |
-| GET | `/api/admin/coaches/pending` | Admin | Coaches awaiting approval |
-| PUT | `/api/admin/coaches/:id/approve` | Admin | Approve a coach |
-| PUT | `/api/admin/coaches/:id/suspend` | Admin | Suspend a coach |
-| GET | `/api/admin/masterclasses` | Admin | All masterclasses |
-| DELETE | `/api/admin/masterclasses/:id` | Admin | Force delete (bypasses enrollment check) |
-
-### Analytics
-
-| Method | Endpoint | Access | Description |
-| --- | --- | --- | --- |
-| GET | `/api/analytics/coach` | Coach | KPIs + per-class stats + daily trend + category distribution |
-
-## Role-Based Access
-
-### Admin
-
-*   Full platform visibility
-*   Approve or suspend coaches before they can publish
-*   Force-delete any masterclass for content moderation
-*   View all users and aggregate analytics
-
-### Coach
-
-*   Create / edit / delete **own** masterclasses only
-*   Cannot enroll in own classes
-*   Cannot delete a class with active enrollments (requires admin override)
-*   View enrolled student roster for own classes
-*   Access personal analytics dashboard
-
-### Player
-
-*   Browse and search all masterclasses from approved coaches
-*   Enroll (active seat) or join waitlist (full class)
-*   Cancel enrollment — triggers auto-promotion of first waitlisted player
-*   Submit ratings and reviews for attended classes
-
-### Key Enforcement Points
-
-*   `verifyToken` middleware — validates JWT signature on every protected route
-*   `requireRole('coach')` — blocks non-coaches from coach endpoints at API level
-*   `coach_id === req.user.userId` ownership check — prevents coaches editing others' classes
-*   `AppDataSource.transaction()` — prevents race conditions on last available seat
-
-## Feature Status
-
-| # | Feature | Backend | Frontend | Status |
-| --- | --- | --- | --- | --- |
-| 1 | Multi-role System | ✅ | ✅ | Complete |
-| 2 | Core Entity (Masterclass CRUD) | ✅ | ✅ | Complete |
-| 3 | JWT Auth + RBAC | ✅ | ✅ | Complete |
-| 4 | Role Dashboards | ✅ | ✅ | Complete |
-| 5 | Enrollment + Capacity Transaction | ✅ | ✅ | Complete |
-| 6 | Advanced Search + Pagination | ✅ | ✅ | Complete |
-| 7 | Review System | ✅ | ✅ | Complete |
-| 8 | Waitlist Auto-Promotion | ✅ | ✅ | Complete |
-| 9 | File Upload (Multer) | ✅ | ✅ | Complete |
-| 10 | Analytics Dashboard | ✅ | ✅ | Complete |
-| — | Email Notifications | ⬜ | ⬜ | Optional (deferred) |
-| — | In-App Messaging | ⬜ | ⬜ | Optional (deferred) |
-
-## Scripts
-
-### Backend (`server/`)
-
-```plaintext
-npm run dev      # Start with ts-node-dev (hot reload)
-npm run build    # Compile TypeScript to dist/
-npm start        # Run compiled dist/index.js
-```
-
-### Frontend (`client/`)
-
-```plaintext
-npm run dev      # Vite dev server (http://localhost:3000)
-npm run build    # Production build to dist/
-npm run preview  # Preview production build locally
-```
-
-## License
-
-MIT
+## 📜 License
+This project is licensed under the MIT License.

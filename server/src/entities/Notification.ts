@@ -15,6 +15,7 @@ export enum NotificationType {
     KICK_REQUEST_APPROVED = 'kick_request_approved',
     KICK_REQUEST_REJECTED = 'kick_request_rejected',
     KICKED_FROM_CLASS = 'kicked_from_class',
+    KICK_REQUEST_PENDING = 'kick_request_pending',
 }
 
 @Entity('notifications')
