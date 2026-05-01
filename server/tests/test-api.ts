@@ -1,3 +1,5 @@
+import { execSync } from 'child_process';
+
 async function runTests() {
   const BASE_URL = 'http://localhost:5000/api';
   let playerToken = '';
@@ -11,7 +13,7 @@ async function runTests() {
       try {
         const text = await res.text();
         console.error('Response details:', text);
-      } catch(e) {}
+      } catch (_e) {}
       throw new Error(msg);
     }
   }
@@ -22,7 +24,6 @@ async function runTests() {
     const pEmail = `player_${timestamp}@test.com`;
     const cEmail = `coach_${timestamp}@test.com`;
 
-    // Register Player
     const pReg = await fetch(`${BASE_URL}/auth/register`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -32,8 +33,7 @@ async function runTests() {
     await assert(pReg, pReg.ok, 'Player registration should succeed');
     playerToken = pData.token;
     console.log('✅ Player Registration & Login');
-    
-    // Register Coach
+
     const cReg = await fetch(`${BASE_URL}/auth/register`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -44,14 +44,13 @@ async function runTests() {
     coachToken = cData.token;
     console.log('✅ Coach Registration & Login');
 
-    // Approve coach via psql
-    const { execSync } = require('child_process');
-    execSync(`psql -U fazlur -d chess_arena -c "UPDATE users SET is_approved = true WHERE email = '${cEmail}';"`, {
-      env: { ...process.env, PGPASSWORD: 'uJA3^3kvoh' }
-    });
+    execSync(
+      `psql -U fazlur -d chess_arena -c "UPDATE users SET is_approved = true WHERE email = '${cEmail}';"`,
+      { env: { ...process.env, PGPASSWORD: 'uJA3^3kvoh' } }
+    );
     console.log('✅ Coach Approved via DB');
 
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.error('❌ Auth test failed:', err);
     process.exit(1);
   }
@@ -60,7 +59,7 @@ async function runTests() {
   try {
     const res = await fetch(`${BASE_URL}/profile/me`, {
       method: 'PATCH',
-      headers: { 
+      headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${playerToken}`
       },
@@ -68,7 +67,7 @@ async function runTests() {
     });
     await assert(res, res.ok, 'Profile update should succeed');
     console.log('✅ Profile PATCH Update');
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.error('❌ Profile test failed:', err);
     process.exit(1);
   }
@@ -78,7 +77,7 @@ async function runTests() {
   try {
     const res = await fetch(`${BASE_URL}/masterclasses`, {
       method: 'POST',
-      headers: { 
+      headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${coachToken}`
       },
@@ -98,7 +97,7 @@ async function runTests() {
     const getRes = await fetch(`${BASE_URL}/masterclasses/${newMasterclassId}`);
     await assert(getRes, getRes.ok, 'Masterclass fetch should succeed');
     console.log('✅ Masterclass Fetch');
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.error('❌ Masterclass test failed:', err);
     process.exit(1);
   }
@@ -107,9 +106,7 @@ async function runTests() {
   try {
     const res = await fetch(`${BASE_URL}/enrollments/${newMasterclassId}`, {
       method: 'POST',
-      headers: { 
-        'Authorization': `Bearer ${playerToken}`
-      }
+      headers: { 'Authorization': `Bearer ${playerToken}` }
     });
     await assert(res, res.ok, 'Enrollment should succeed');
     console.log('✅ Player Enrollment');
@@ -119,7 +116,7 @@ async function runTests() {
     });
     await assert(myRes, myRes.ok, 'Fetch my enrollments should succeed');
     console.log('✅ Fetch My Enrollments');
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.error('❌ Enrollment test failed:', err);
     process.exit(1);
   }
@@ -128,31 +125,31 @@ async function runTests() {
   try {
     const res = await fetch(`${BASE_URL}/reviews/${newMasterclassId}`, {
       method: 'POST',
-      headers: { 
+      headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${playerToken}`
       },
       body: JSON.stringify({ rating: 5, comment: 'Great class!' })
     });
-    
+
     if (!res.ok) {
-       const text = await res.text();
-       console.log('⚠️ Review POST failed (expected if class not started/finished):', text);
+      const text = await res.text();
+      console.log('⚠️ Review POST failed (expected if class not started/finished):', text);
     } else {
-       console.log('✅ Review POST');
-       
-       const patchRes = await fetch(`${BASE_URL}/reviews/${newMasterclassId}`, {
-         method: 'PATCH',
-         headers: { 
-           'Content-Type': 'application/json',
-           'Authorization': `Bearer ${playerToken}`
-         },
-         body: JSON.stringify({ rating: 4 })
-       });
-       await assert(patchRes, patchRes.ok, 'Review update should succeed');
-       console.log('✅ Review PATCH');
+      console.log('✅ Review POST');
+
+      const patchRes = await fetch(`${BASE_URL}/reviews/${newMasterclassId}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${playerToken}`
+        },
+        body: JSON.stringify({ rating: 4 })
+      });
+      await assert(patchRes, patchRes.ok, 'Review update should succeed');
+      console.log('✅ Review PATCH');
     }
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.error('❌ Review test failed:', err);
     process.exit(1);
   }
@@ -160,7 +157,6 @@ async function runTests() {
   // 6. Bookmark Tests
   console.log('\n━━━ New Feature Tests ━━━\n');
   try {
-    // Toggle bookmark ON
     const addRes = await fetch(`${BASE_URL}/bookmarks/${newMasterclassId}`, {
       method: 'POST',
       headers: { 'Authorization': `Bearer ${playerToken}` }
@@ -170,7 +166,6 @@ async function runTests() {
     await assert(addRes, addData.bookmarked === true, 'Should be bookmarked after toggle');
     console.log('✅ Bookmark Toggle ON');
 
-    // Get bookmark IDs
     const idsRes = await fetch(`${BASE_URL}/bookmarks/ids`, {
       headers: { 'Authorization': `Bearer ${playerToken}` }
     });
@@ -179,7 +174,6 @@ async function runTests() {
     await assert(idsRes, ids.includes(newMasterclassId), 'Should contain bookmarked class ID');
     console.log('✅ Bookmark IDs Fetch');
 
-    // Get full bookmarks
     const listRes = await fetch(`${BASE_URL}/bookmarks`, {
       headers: { 'Authorization': `Bearer ${playerToken}` }
     });
@@ -188,7 +182,6 @@ async function runTests() {
     await assert(listRes, bookmarks.length > 0, 'Should have at least one bookmark');
     console.log('✅ Bookmark List Fetch');
 
-    // Toggle bookmark OFF
     const removeRes = await fetch(`${BASE_URL}/bookmarks/${newMasterclassId}`, {
       method: 'POST',
       headers: { 'Authorization': `Bearer ${playerToken}` }
@@ -197,7 +190,7 @@ async function runTests() {
     const removeData = await removeRes.json();
     await assert(removeRes, removeData.bookmarked === false, 'Should be unbookmarked after second toggle');
     console.log('✅ Bookmark Toggle OFF');
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.error('❌ Bookmark test failed:', err);
     process.exit(1);
   }
@@ -213,24 +206,22 @@ async function runTests() {
     await assert(res, 'unread_count' in data, 'Should return unread_count');
     console.log(`✅ Notifications Fetch (${data.notifications.length} notifications, ${data.unread_count} unread)`);
 
-    // Mark all as read
     const markAllRes = await fetch(`${BASE_URL}/notifications/read-all`, {
       method: 'PUT',
       headers: { 'Authorization': `Bearer ${playerToken}` }
     });
     await assert(markAllRes, markAllRes.ok, 'Mark all read should succeed');
     console.log('✅ Notifications Mark All Read');
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.error('❌ Notification test failed:', err);
     process.exit(1);
   }
 
   // 8. Coach Public Profile Test
   try {
-    // We'll use a coach from the seed data. Use coach token to find their ID.
-    // Actually, let's test the currently created coach
-    // The coach ID should be in the token payload
-    const tokenPayload = JSON.parse(Buffer.from(coachToken.split('.')[1], 'base64').toString());
+    const tokenPayload = JSON.parse(
+      Buffer.from(coachToken.split('.')[1] as string, 'base64').toString()
+    ) as { userId: string };
     const coachId = tokenPayload.userId;
 
     const res = await fetch(`${BASE_URL}/profile/coach/${coachId}`);
@@ -239,7 +230,7 @@ async function runTests() {
     await assert(res, profile.name === 'Test Coach', 'Coach name should match');
     await assert(res, profile.stats !== undefined, 'Should include stats');
     console.log('✅ Coach Public Profile');
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.error('❌ Coach profile test failed:', err);
     process.exit(1);
   }
@@ -309,12 +300,12 @@ async function runTests() {
     });
     await assert(notifRes, notifRes.ok, 'Notifications fetch after material add');
     const notifData = await notifRes.json();
-    const classUpdateNotif = notifData.notifications.find(
-      (n: any) => n.type === 'class_updated'
+    const classUpdateNotif = (notifData.notifications as { type: string }[]).find(
+      (n) => n.type === 'class_updated'
     );
     await assert(notifRes, classUpdateNotif !== undefined, 'Should have class_updated notification');
     console.log('✅ Material→Notification Integration');
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.error('❌ Materials test failed:', err);
     process.exit(1);
   }
@@ -339,14 +330,13 @@ async function runTests() {
     await assert(getRes, mcData.video_url === 'https://www.youtube.com/watch?v=example123', 'video_url should persist');
     await assert(getRes, Array.isArray(mcData.materials), 'materials array should exist');
     console.log('✅ Masterclass Detail includes video_url & materials');
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.error('❌ Video URL test failed:', err);
     process.exit(1);
   }
 
   // Cleanup
   try {
-    // Delete enrollment first
     const delEnrollment = await fetch(`${BASE_URL}/enrollments/${newMasterclassId}`, {
       method: 'DELETE',
       headers: { 'Authorization': `Bearer ${playerToken}` }
@@ -360,7 +350,7 @@ async function runTests() {
     });
     await assert(delRes, delRes.ok, 'Masterclass deletion should succeed');
     console.log('✅ Masterclass Deletion (Cleanup)');
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.error('❌ Cleanup failed:', err);
   }
 

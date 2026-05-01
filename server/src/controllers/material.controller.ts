@@ -2,11 +2,19 @@ import { Request, Response } from 'express';
 import { AuthRequest } from '../middlewares/auth';
 import * as MaterialService from '../services/material.service';
 
-export const addMaterial = async (req: AuthRequest, res: Response): Promise<void> => {
+// ADDED: typed param interfaces — eliminates noUncheckedIndexedAccess widening
+interface ClassIdParam { classId: string }
+interface MaterialIdParam { id: string }
+
+// CHANGED: AuthRequest & Request<ClassIdParam> to type req.params.classId as string
+export const addMaterial = async (
+  req: AuthRequest & Request<ClassIdParam>,
+  res: Response
+): Promise<void> => {
   try {
     const result = await MaterialService.addMaterial(
       req.user!.userId,
-      req.params.classId,
+      req.params.classId,  // no cast needed
       req.body
     );
     res.status(201).json(result);
@@ -15,7 +23,11 @@ export const addMaterial = async (req: AuthRequest, res: Response): Promise<void
   }
 };
 
-export const getMaterials = async (req: Request, res: Response): Promise<void> => {
+// CHANGED: Request<ClassIdParam> to type req.params.classId as string
+export const getMaterials = async (
+  req: Request<ClassIdParam>,
+  res: Response
+): Promise<void> => {
   try {
     const result = await MaterialService.getMaterials(req.params.classId);
     res.status(200).json(result);
@@ -24,11 +36,15 @@ export const getMaterials = async (req: Request, res: Response): Promise<void> =
   }
 };
 
-export const updateMaterial = async (req: AuthRequest, res: Response): Promise<void> => {
+// CHANGED: AuthRequest & Request<MaterialIdParam> to type req.params.id as string
+export const updateMaterial = async (
+  req: AuthRequest & Request<MaterialIdParam>,
+  res: Response
+): Promise<void> => {
   try {
     const result = await MaterialService.updateMaterial(
       req.user!.userId,
-      Number(req.params.id),
+      Number(req.params.id),  // Number() on a string is safe, no cast needed
       req.body
     );
     res.status(200).json(result);
@@ -37,7 +53,11 @@ export const updateMaterial = async (req: AuthRequest, res: Response): Promise<v
   }
 };
 
-export const deleteMaterial = async (req: AuthRequest, res: Response): Promise<void> => {
+// CHANGED: AuthRequest & Request<MaterialIdParam> to type req.params.id as string
+export const deleteMaterial = async (
+  req: AuthRequest & Request<MaterialIdParam>,
+  res: Response
+): Promise<void> => {
   try {
     const result = await MaterialService.deleteMaterial(
       req.user!.userId,
@@ -49,7 +69,11 @@ export const deleteMaterial = async (req: AuthRequest, res: Response): Promise<v
   }
 };
 
-export const reorderMaterials = async (req: AuthRequest, res: Response): Promise<void> => {
+// CHANGED: AuthRequest & Request<ClassIdParam> to type req.params.classId as string
+export const reorderMaterials = async (
+  req: AuthRequest & Request<ClassIdParam>,
+  res: Response
+): Promise<void> => {
   try {
     const result = await MaterialService.reorderMaterials(
       req.user!.userId,

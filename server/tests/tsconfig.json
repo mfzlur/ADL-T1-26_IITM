@@ -1,0 +1,18 @@
+{
+  "extends": "../tsconfig.json",
+  "compilerOptions": {
+    "types": ["node"],
+    "module": "commonjs",
+    // CHANGED: "node" → "bundler" (fixes TS6.0 moduleResolution deprecation)
+    "moduleResolution": "bundler",
+    "noUncheckedSideEffectImports": false,
+    "isolatedModules": false,
+    "rootDir": ".",
+    "outDir": "../dist/tests"
+  },
+  "include": ["./**/*"],
+  // ADDED: Override the parent's exclude which was resolving "tests" → server/tests/
+  // and silently excluding this entire folder before include could run.
+  // Only exclude node_modules and dist relative to THIS config's location.
+  "exclude": ["../node_modules", "../dist"]
+}

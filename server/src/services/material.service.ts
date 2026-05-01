@@ -25,7 +25,6 @@ export const addMaterial = async (
   if (!mc) throw new Error('Masterclass not found');
   if (mc.coach_id !== coachId) throw new Error('You can only add materials to your own classes');
 
-  // Get next sort order if not specified
   const maxOrder = await materialRepo
     .createQueryBuilder('m')
     .select('MAX(m.sort_order)', 'max')
@@ -41,7 +40,6 @@ export const addMaterial = async (
 
   const saved = await materialRepo.save(material);
 
-  // Notify enrolled students about new material
   await notifyEnrolledStudents(
     masterclassId,
     mc.title,
@@ -109,8 +107,12 @@ export const reorderMaterials = async (
   if (!mc) throw new Error('Masterclass not found');
   if (mc.coach_id !== coachId) throw new Error('Not your class');
 
-  for (let i = 0; i < materialIds.length; i++) {
-    await materialRepo.update(materialIds[i], { sort_order: i });
+  // CHANGED: for(let i) → for...of with .entries()
+  // noUncheckedIndexedAccess widens materialIds[i] to number | undefined.
+  // .entries() destructuring is always in-bounds — TypeScript infers [number, number],
+  // so `id` is definitively number with no undefined widening.
+  for (const [i, id] of materialIds.entries()) {
+    await materialRepo.update(id, { sort_order: i });
   }
 
   return { message: 'Materials reordered' };
