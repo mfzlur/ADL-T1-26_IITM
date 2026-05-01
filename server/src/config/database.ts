@@ -22,7 +22,7 @@ export const AppDataSource = new DataSource({
     password: process.env.DB_PASSWORD,
     database: process.env.DB_NAME,
     synchronize: true,   // ⚠️ auto-creates tables — fine for dev, turn OFF in production
-    logging: process.env.NODE_ENV === 'development',
+    logging: false,
     entities: [User, Masterclass, Enrollment, Review, Notification, Bookmark, ClassMaterial, FavoriteCoach, KickRequest],
     migrations: [__dirname + '/../migrations/*.ts'],
 });

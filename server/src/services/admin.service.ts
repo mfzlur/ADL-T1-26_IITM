@@ -6,6 +6,7 @@ import { Review } from '../entities/Review';
 import { KickRequest, KickRequestStatus } from '../entities/KickRequest';
 import * as NotificationService from './notification.service';
 import { NotificationType } from '../entities/Notification';
+import { CacheService } from './cache.service';
 
 const userRepo        = AppDataSource.getRepository(User);
 const masterclassRepo = AppDataSource.getRepository(Masterclass);
@@ -83,6 +84,10 @@ export const approveCoach = async (coachId: string) => {
   if (coach.is_approved) throw new Error('Coach is already approved');
   coach.is_approved = true;
   await userRepo.save(coach);
+  
+  // Invalidate user permission cache
+  await CacheService.del(`user:perm:${coachId}`);
+  
   return { message: `Coach "${coach.name}" has been approved successfully` };
 };
 
@@ -93,6 +98,10 @@ export const suspendCoach = async (coachId: string) => {
   if (!coach.is_approved) throw new Error('Coach is already suspended/pending');
   coach.is_approved = false;
   await userRepo.save(coach);
+
+  // Invalidate user permission cache
+  await CacheService.del(`user:perm:${coachId}`);
+
   return { message: `Coach "${coach.name}" has been suspended` };
 };
 
@@ -147,6 +156,10 @@ export const forceDeleteMasterclass = async (masterclassId: string) => {
   const mc = await masterclassRepo.findOne({ where: { id: masterclassId } });
   if (!mc) throw new Error('Masterclass not found');
   await masterclassRepo.remove(mc);
+
+  // Invalidate list cache
+  await CacheService.delByPattern('mc:list:*');
+
   return { message: `Masterclass "${mc.title}" has been removed by admin` };
 };
 

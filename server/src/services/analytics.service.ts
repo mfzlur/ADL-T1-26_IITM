@@ -1,11 +1,17 @@
 import { AppDataSource } from '../config/database';
 import { Enrollment, EnrollmentStatus } from '../entities/Enrollment';
 import { Masterclass } from '../entities/Masterclass';
+import { CacheService } from './cache.service';
 
 const enrollmentRepo  = AppDataSource.getRepository(Enrollment);
 const masterclassRepo = AppDataSource.getRepository(Masterclass);
 
 export const getCoachAnalytics = async (coachId: string) => {
+    const cacheKey = `analytics:coach:${coachId}`;
+    const cached = await CacheService.get<any>(cacheKey);
+    if (cached) {
+        return cached;
+    }
 
     // 1. All classes by this coach
     const classes = await masterclassRepo.find({
@@ -14,12 +20,14 @@ export const getCoachAnalytics = async (coachId: string) => {
     });
 
     if (classes.length === 0) {
-        return {
+        const emptyResult = {
             kpis: { total_classes: 0, total_enrollments: 0, total_waitlisted: 0, avg_fill_rate: 0 },
             enrollment_per_class: [],
             daily_trend:          [],
             category_distribution: [],
         };
+        await CacheService.set(cacheKey, emptyResult, 3600);
+        return emptyResult;
     }
 
     const classIds = classes.map(c => c.id);
@@ -42,11 +50,11 @@ export const getCoachAnalytics = async (coachId: string) => {
         return {
             class_id:   mc.id,
             title:      mc.title.length > 28 ? mc.title.slice(0, 28) + '…' : mc.title,
-                                             category:   mc.category,
-                                             capacity:   mc.capacity,
-                                             active,
-                                             waitlisted,
-                                             fill_rate:  fillRate,
+            category:   mc.category,
+            capacity:   mc.capacity,
+            active,
+            waitlisted,
+            fill_rate:  fillRate,
         };
     });
 
@@ -71,38 +79,43 @@ export const getCoachAnalytics = async (coachId: string) => {
         if (trendMap[key] !== undefined) trendMap[key]++;
     });
 
-        const daily_trend = Object.entries(trendMap).map(([date, count]) => ({
-            date,
-            count,
-        }));
+    const daily_trend = Object.entries(trendMap).map(([date, count]) => ({
+        date,
+        count,
+    }));
 
-        // 5. Category distribution (for doughnut)
-        const categoryMap: Record<string, number> = {
-            opening: 0, middlegame: 0, endgame: 0, tactics: 0
-        };
-        enrollment_per_class.forEach(c => {
-            categoryMap[c.category] = (categoryMap[c.category] || 0) + c.active;
-        });
-        const category_distribution = Object.entries(categoryMap)
-        .map(([category, count]) => ({ category, count }))
-        .filter(c => c.count > 0);
+    // 5. Category distribution (for doughnut)
+    const categoryMap: Record<string, number> = {
+        opening: 0, middlegame: 0, endgame: 0, tactics: 0
+    };
+    enrollment_per_class.forEach(c => {
+        categoryMap[c.category] = (categoryMap[c.category] || 0) + c.active;
+    });
+    const category_distribution = Object.entries(categoryMap)
+    .map(([category, count]) => ({ category, count }))
+    .filter(c => c.count > 0);
 
-        // 6. KPI summary
-        const totalCapacity   = classes.reduce((s, c) => s + c.capacity, 0);
-        const totalActive     = activeEnrollments.length;
-        const avgFillRate     = totalCapacity > 0
-        ? Math.round((totalActive / totalCapacity) * 100)
-        : 0;
+    // 6. KPI summary
+    const totalCapacity   = classes.reduce((s, c) => s + c.capacity, 0);
+    const totalActive     = activeEnrollments.length;
+    const avgFillRate     = totalCapacity > 0
+    ? Math.round((totalActive / totalCapacity) * 100)
+    : 0;
 
-        return {
-            kpis: {
-                total_classes:     classes.length,
-                total_enrollments: totalActive,
-                total_waitlisted:  waitlistedEnrollments.length,
-                avg_fill_rate:     avgFillRate,
-            },
-            enrollment_per_class,
-            daily_trend,
-            category_distribution,
-        };
+    const result = {
+        kpis: {
+            total_classes:     classes.length,
+            total_enrollments: totalActive,
+            total_waitlisted:  waitlistedEnrollments.length,
+            avg_fill_rate:     avgFillRate,
+        },
+        enrollment_per_class,
+        daily_trend,
+        category_distribution,
+    };
+
+    // Cache for 1 hour
+    await CacheService.set(cacheKey, result, 3600);
+
+    return result;
 };

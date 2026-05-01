@@ -3,6 +3,7 @@ import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import { AppDataSource } from './config/database';
+import { redis } from './config/redis';
 import authRoutes from './routes/auth.routes';
 import path from 'path';
 import masterclassRoutes from './routes/masterclass.routes';
@@ -48,13 +49,21 @@ app.get('/api/health', (req, res) => {
 });
 
 AppDataSource.initialize()
-.then(() => {
-    console.log('✅ PostgreSQL connected via TypeORM');
+.then(async () => {
+    // Wait for Redis to be ready if not already
+    if (redis.status !== 'ready') {
+        await new Promise((resolve, reject) => {
+            redis.once('ready', resolve);
+            redis.once('error', reject);
+            setTimeout(() => reject(new Error('Redis timeout')), 5000);
+        });
+    }
+
     app.listen(PORT, () => {
-        console.log(`🚀 Server running on http://localhost:${PORT}`);
+        console.log(`🚀 Server ready at http://localhost:${PORT} (DB & Redis OK)`);
     });
 })
 .catch((err) => {
-    console.error('❌ Database connection failed:', err);
+    console.error('❌ Server startup failed:', err);
     process.exit(1);
 });

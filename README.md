@@ -47,7 +47,7 @@ A high-performance, role-based full-stack platform designed to bridge the gap be
 | **Backend** | **Node.js + Express 5** | Scalable and modular REST API architecture. |
 | **Database** | **PostgreSQL** | Relational integrity and complex querying capabilities. |
 | **ORM** | **TypeORM** | Programmatic schema management and advanced QueryBuilder. |
-| **Cache** | **Redis** | (Optional) High-speed caching for frequent read operations. |
+| **Cache** | **Redis** | High-speed caching for search, analytics, and permissions. |
 | **State** | **React Context API** | Lightweight global state management for auth and user profiles. |
 | **Auth** | **JWT + bcrypt** | Secure, stateless authentication and salted password hashing. |
 
@@ -62,6 +62,7 @@ graph TD
     API -- Ownership Check --> Controllers[Route Controllers]
     Controllers -- Business Logic --> Services[Service Layer]
     Services -- TypeORM --> DB[(PostgreSQL)]
+    Services -- Redis --> Cache[(Redis Cache)]
     Services -- File System --> Storage[Uploads/PGN]
     Services -- Pub/Sub --> Notifications[Notification Service]
 ```
@@ -126,7 +127,22 @@ npm run dev
 
 ---
 
-## 📖 API Documentation (Summary)
+## 📖 Documentation
+
+Detailed documentation for all system features, architecture, and business logic can be found in the [**docs/**](docs/README.md) directory:
+
+- **[Project Report](docs/project_report.md)**: Full problem statement, system overview, and initial design.
+- **[Technical Requirements](docs/technical_requirements.md)**: Mandatory tech stack and structural rules.
+- **[AI Usage Declaration](ai_usage.md)**: Quantification of AI assistance (24.0%).
+- **[Authentication & RBAC](docs/auth_rbac.md)**: JWT implementation and security guards.
+- **[Enrollment & Waitlisting](docs/enrollment_system.md)**: Transactional logic and FIFO promotion.
+- **[Search & Filtering](docs/search_filter.md)**: Dynamic QueryBuilder and optimization.
+- **[Notification System](docs/notification_system.md)**: In-app alerts and persistence.
+- **[Analytics Dashboards](docs/analytics_dashboards.md)**: Data aggregation for Admins and Coaches.
+
+---
+
+## 🚥 API Documentation (Summary)
 
 | Path | Method | Access | Description |
 | :--- | :--- | :--- | :--- |

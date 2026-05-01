@@ -7,6 +7,8 @@ import { FavoriteCoach } from '../entities/FavoriteCoach';
 import { KickRequest } from '../entities/KickRequest';
 import * as NotificationService from './notification.service';
 import { NotificationType } from '../entities/Notification';
+import { CacheService } from './cache.service';
+import crypto from 'crypto';
 
 const masterclassRepo = AppDataSource.getRepository(Masterclass);
 const enrollmentRepo  = AppDataSource.getRepository(Enrollment);
@@ -55,6 +57,9 @@ export const createMasterclass = async (
         await Promise.all(notifications.map(n => NotificationService.createNotification(n)));
     }
 
+    // Invalidate list cache
+    await CacheService.delByPattern('mc:list:*');
+
     return savedClass;
 };
 
@@ -71,6 +76,26 @@ export const getAllMasterclasses = async (filters: {
     page?:        number;
     limit?:       number;
 }) => {
+    // Generate cache key based on filters
+    const filterHash = crypto
+        .createHash('md5')
+        .update(JSON.stringify(filters))
+        .digest('hex');
+    const cacheKey = `mc:list:${filterHash}`;
+
+    // Try cache first
+    const cachedData = await CacheService.get<{
+        data: any[];
+        total: number;
+        page: number;
+        limit: number;
+        total_pages: number;
+    }>(cacheKey);
+
+    if (cachedData) {
+        return cachedData;
+    }
+
     const page      = filters.page  || 1;
     const limit     = filters.limit || 9;
     const skip      = (page - 1) * limit;
@@ -154,13 +179,18 @@ export const getAllMasterclasses = async (filters: {
         })
     );
 
-    return {
+    const resultResponse = {
         data:        result,
         total,
         page,
         limit,
         total_pages: Math.ceil(total / limit),
     };
+
+    // Cache the result for 5 minutes
+    await CacheService.set(cacheKey, resultResponse, 300);
+
+    return resultResponse;
 };
 
 // ─── GET ONE ─────────────────────────────────────────────────────────
@@ -266,6 +296,9 @@ export const updateMasterclass = async (
         );
     }
 
+    // Invalidate list cache
+    await CacheService.delByPattern('mc:list:*');
+
     return saved;
 };
 
@@ -291,6 +324,10 @@ export const deleteMasterclass = async (id: string, coachId: string) => {
     }
 
     await masterclassRepo.remove(mc);
+    
+    // Invalidate list cache
+    await CacheService.delByPattern('mc:list:*');
+
     return { message: 'Masterclass deleted successfully' };
 };
 
