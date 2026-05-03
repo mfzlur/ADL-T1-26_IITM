@@ -1,5 +1,6 @@
 import { execSync } from 'child_process';
 
+
 async function runTests() {
   const BASE_URL = 'http://localhost:5000/api';
   let playerToken = '';

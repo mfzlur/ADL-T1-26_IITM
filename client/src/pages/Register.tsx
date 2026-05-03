@@ -81,8 +81,10 @@ export default function Register() {
         // Player is now logged in — navigate to their dashboard
         navigate("/player");
       }
-    } catch (err: any) {
-      setError(err.response?.data?.message || "Registration failed");
+    } catch (err: unknown) {
+      const r = (err as { response?: { data?: { message?: string } } })
+        .response;
+      setError(r?.data?.message ?? "Registration failed");
     } finally {
       setLoading(false);
     }

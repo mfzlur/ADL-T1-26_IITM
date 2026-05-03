@@ -1,41 +1,8 @@
-// context/AuthProvider.tsx
-import {
-  createContext,
-  useState,
-  useEffect,
-  useCallback,
-  ReactNode,
-} from "react";
+import { useState, useEffect, useCallback, ReactNode } from "react";
 import api from "../utils/api";
 import { setToken, clearToken, parseJwt } from "../utils/auth";
-
-// ── Types ────────────────────────────────────────────────
-export interface User {
-  id: string;
-  name: string;
-  email: string;
-  role: "admin" | "coach" | "player";
-  is_approved: boolean;
-}
-
-interface AuthContextType {
-  user: User | null;
-  loading: boolean;
-  login: (email: string, password: string) => Promise<void>;
-  register: (
-    name: string,
-    email: string,
-    password: string,
-    role: string,
-  ) => Promise<void>;
-  logout: () => void;
-}
-
-// ── Context ──────────────────────────────────────────────
-
-export const AuthContext = createContext<AuthContextType>(
-  {} as AuthContextType,
-);
+import { AuthContext } from "./AuthContext"; // ✅ import from new file
+import type { User } from "./AuthContext"; // ✅ import User type
 
 // ── Provider ─────────────────────────────────────────────
 export const AuthProvider = ({ children }: { children: ReactNode }) => {

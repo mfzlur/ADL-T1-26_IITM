@@ -96,3 +96,9 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+
+whole_code.md
+whole_code_populated.md
+append_code.py
+
